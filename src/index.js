@@ -14,17 +14,38 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(helmet());
-app.use(express.json());
+const allowedOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(",")
+  : [];
+
 app.use(
-  cors({
-    origin: process.env.CLIENT_ORIGIN?.split(",") || "*",
-    credentials: true,
+  helmet({
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginEmbedderPolicy: false,
   })
 );
+
+app.use(express.json());
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.options("*", cors());
+
 app.use(morgan("dev"));
 
 app.get("/health", (req, res) => res.json({ ok: true }));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/habits", habitRoutes);
 app.use("/api", socialRoutes);
@@ -32,12 +53,8 @@ app.use("/api", socialRoutes);
 const start = async () => {
   try {
     await connectDB(process.env.MONGODB_URI);
-    
-    // Initialize email reminder schedule
     initializeReminderSchedule();
-    // eslint-disable-next-line no-console
     console.log("Email reminder schedule initialized");
-    
     app.listen(port, () => console.log(`Server listening on ${port}`));
   } catch (err) {
     console.error("Failed to start server", err);
