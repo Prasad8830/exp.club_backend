@@ -7,6 +7,7 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import habitRoutes from "./routes/habits.js";
 import socialRoutes from "./routes/social.js";
+import { initializeReminderSchedule } from "./utils/notification.js";
 
 dotenv.config();
 
@@ -31,6 +32,12 @@ app.use("/api", socialRoutes);
 const start = async () => {
   try {
     await connectDB(process.env.MONGODB_URI);
+    
+    // Initialize email reminder schedule
+    initializeReminderSchedule();
+    // eslint-disable-next-line no-console
+    console.log("Email reminder schedule initialized");
+    
     app.listen(port, () => console.log(`Server listening on ${port}`));
   } catch (err) {
     console.error("Failed to start server", err);

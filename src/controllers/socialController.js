@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Follow } from "../models/Follow.js";
 import { CheckIn } from "../models/CheckIn.js";
 import { User } from "../models/User.js";
+import { Habit } from "../models/Habit.js";
 import { computeStreak } from "../utils/period.js";
 
 export async function searchUsers(req, res) {
@@ -73,4 +74,53 @@ export async function feed(req, res) {
     streak: streaks[ci.habitId?.id] || 0,
   }));
   return res.json({ feed });
+}
+
+export async function leaderboard(req, res) {
+  try {
+    // Get all users
+    const users = await User.find({}).select("name email avatarUrl");
+    
+    // Get all habits and check-ins
+    const habits = await Habit.find({});
+    const checkIns = await CheckIn.find({});
+    
+    // Calculate stats for each user
+    const userStats = users.map((user) => {
+      const userHabits = habits.filter((h) => h.userId.toString() === user._id.toString());
+      const userCheckIns = checkIns.filter((c) => c.userId.toString() === user._id.toString());
+      
+      // Calculate max streak across all habits
+      let maxStreak = 0;
+      userHabits.forEach((habit) => {
+        const habitCheckIns = userCheckIns.filter((c) => c.habitId.toString() === habit._id.toString());
+        const streak = computeStreak(habitCheckIns, habit.frequency);
+        if (streak > maxStreak) maxStreak = streak;
+      });
+      
+      return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        totalHabits: userHabits.length,
+        totalCheckIns: userCheckIns.length,
+        maxStreak: maxStreak,
+      };
+    });
+    
+    // Sort by max streak (descending), then by total check-ins
+    const ranked = userStats
+      .filter((u) => u.totalHabits > 0)
+      .sort((a, b) => {
+        if (b.maxStreak !== a.maxStreak) return b.maxStreak - a.maxStreak;
+        return b.totalCheckIns - a.totalCheckIns;
+      });
+    
+    return res.json({ leaderboard: ranked });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("leaderboard error", err);
+    return res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
 }

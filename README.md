@@ -35,6 +35,8 @@ JWT_SECRET=your-super-secret-jwt-key-change-this
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 CLIENT_ORIGIN=http://localhost:5173
 NODE_ENV=development
+EMAIL_USER=your-gmail@gmail.com
+EMAIL_PASSWORD=your-app-specific-password
 ```
 
 ### Environment Variables Explained:
@@ -47,6 +49,8 @@ NODE_ENV=development
 | `GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID from Google Cloud Console |
 | `CLIENT_ORIGIN` | Frontend URL for CORS configuration |
 | `NODE_ENV` | Environment mode (development/production) |
+| `EMAIL_USER` | Gmail account for sending reminder emails (optional) |
+| `EMAIL_PASSWORD` | App-specific password for Gmail (optional) |
 
 ## 🔑 Google OAuth Setup
 
